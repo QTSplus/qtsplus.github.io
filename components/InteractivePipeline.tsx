@@ -1,231 +1,388 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, Brain, MessageSquare, Clock } from 'lucide-react';
+import { 
+  Brain, 
+  Target, 
+  Cpu, 
+  ArrowRight, 
+  Activity, 
+  BarChart3, 
+  Layers,
+  Minimize2,
+  Clock
+} from 'lucide-react';
 
-// Simulated tokens for a video
-const TOTAL_TOKENS = 30;
+// Simulation constants
+const TOTAL_TOKENS = 64;
+const GRID_COLS = 16;
 
 interface Token {
   id: number;
-  relevance: number; // High relevance means it matches the query
-  type: 'scenery' | 'object' | 'person' | 'action';
+  relevance: number;
+  kept: boolean;
 }
 
 const InteractivePipeline: React.FC = () => {
-  const [queryType, setQueryType] = useState<'specific' | 'summary'>('specific');
-  const [activeStage, setActiveStage] = useState<number>(0);
-  
-  // Simulate generating tokens based on query type
-  // Specific query: Spiky relevance (Finding a needle in haystack)
-  // Summary query: Distributed relevance (Need overview)
+  const [queryMode, setQueryMode] = useState<'local' | 'global'>('local');
+  const [step, setStep] = useState<number>(0);
   const [tokens, setTokens] = useState<Token[]>([]);
-  
+
+  // Generate tokens based on query mode
   useEffect(() => {
-    const newTokens: Token[] = Array.from({ length: TOTAL_TOKENS }).map((_, i) => {
-      let relevance = 0;
-      if (queryType === 'specific') {
-        // Relevance peaks in one spot (e.g., frame 15-18)
-        relevance = Math.max(0.1, 1 - Math.abs(i - 15) * 0.3);
+    const newTokens = Array.from({ length: TOTAL_TOKENS }).map((_, i) => {
+      let rel = 0;
+      if (queryMode === 'local') {
+        // Peak relevance around index 20-25
+        const dist = Math.abs(i - 22);
+        rel = Math.max(0.05, Math.exp(-dist * 0.3));
+        // Add some noise
+        rel += (Math.random() - 0.5) * 0.1;
       } else {
-        // Relevance is spread out but noisy
-        relevance = 0.3 + Math.random() * 0.5;
+        // Global query: distributed relevance
+        rel = 0.3 + Math.random() * 0.4;
       }
-      
-      return {
-        id: i,
-        relevance,
-        type: i % 4 === 0 ? 'person' : i % 3 === 0 ? 'action' : 'scenery'
+      return { 
+        id: i, 
+        relevance: Math.min(1, Math.max(0, rel)),
+        kept: false 
       };
     });
     setTokens(newTokens);
-  }, [queryType]);
+  }, [queryMode]);
 
-  // Animation loop for stages
+  // Dynamic stats based on simulation
+  const budgetRho = queryMode === 'local' ? 0.15 : 0.45;
+  const keptCount = Math.ceil(TOTAL_TOKENS * budgetRho);
+  
+  // Update "kept" status based on current budget
   useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveStage((prev) => (prev + 1) % 4);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    const sortedIndices = [...tokens]
+      .sort((a, b) => b.relevance - a.relevance)
+      .slice(0, keptCount)
+      .map(t => t.id);
+    
+    setTokens(prev => prev.map(t => ({
+      ...t,
+      kept: sortedIndices.includes(t.id)
+    })));
+  }, [budgetRho, tokens.length]); // simplistic dependency for demo
 
-  const getBudget = () => queryType === 'specific' ? 5 : 12;
-  const budget = getBudget();
+  const steps = [
+    { 
+      title: "1. Vision Encoding & Tokenization", 
+      desc: "The long video input is processed by a frozen Vision Transformer (ViT), producing a dense sequence of visual tokens.",
+      math: "X \\in \\mathbb{R}^{M \\times d}"
+    },
+    { 
+      title: "2. Cross-Attention Scoring", 
+      desc: "Tokens are scored against the text query using multi-head cross-attention. High relevance implies the token contains task-critical evidence.",
+      math: "r = \\max_{h,L} \\alpha \\in [0, 1]^M"
+    },
+    { 
+      title: "3. Adaptive Budget Prediction", 
+      desc: "The Budget Head estimates an optimal retention fraction based on query complexity, entropy, and video length.",
+      math: "\\rho = B_\\psi(s_q, \\log M, r_{max}, H(p))"
+    },
+    { 
+      title: "4. Top-n Selection (Gating)", 
+      desc: "Tokens are filtered using a differentiable Gumbel-Softmax gate during training and a hard Top-n gate at inference.",
+      math: "n = \\min(\\lceil \\rho M \\rceil, n_{max})"
+    },
+    { 
+      title: "5. Lightweight Re-encoding", 
+      desc: "Selected tokens are re-encoded with absolute time information to preserve temporal order and coverage.",
+      math: "X' = \\text{ReEnc}(Z + \\text{Pos})"
+    }
+  ];
 
   return (
-    <section className="py-16 bg-slate-50 overflow-hidden">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-12 text-center">
-          <h3 className="text-3xl font-bold text-slate-900">How QTSplus Works</h3>
-          <p className="text-slate-600 mt-2">An adaptive information gate between vision and language.</p>
+    <section className="py-20 bg-slate-50 border-y border-slate-200 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+            Architectural Deep Dive: Inside QTSplus
+          </h2>
+          <p className="text-lg text-slate-600 max-w-3xl mx-auto">
+            An interactive visualization of the <span className="font-mono font-bold text-primary-700">Query-Aware Token Selector</span> pipeline.
+          </p>
         </div>
 
-        {/* Control Panel */}
-        <div className="flex justify-center mb-10">
-          <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200 inline-flex">
+        {/* Controls */}
+        <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-10">
+          <div className="bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm flex">
             <button
-              onClick={() => setQueryType('specific')}
-              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
-                queryType === 'specific' 
-                  ? 'bg-primary-600 text-white shadow-md' 
-                  : 'text-slate-600 hover:bg-slate-50'
+              onClick={() => setQueryMode('local')}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                queryMode === 'local' 
+                  ? 'bg-slate-900 text-white shadow-md' 
+                  : 'text-slate-500 hover:bg-slate-50'
               }`}
             >
-              Specific Query<br/><span className="text-xs opacity-80">"What color is the car?"</span>
+              <Target className="w-4 h-4" />
+              Localized Query
+              <span className="hidden sm:inline text-xs opacity-60 ml-1">(e.g. "Find the red car")</span>
             </button>
             <button
-              onClick={() => setQueryType('summary')}
-              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
-                queryType === 'summary' 
-                  ? 'bg-primary-600 text-white shadow-md' 
-                  : 'text-slate-600 hover:bg-slate-50'
+              onClick={() => setQueryMode('global')}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                queryMode === 'global' 
+                  ? 'bg-slate-900 text-white shadow-md' 
+                  : 'text-slate-500 hover:bg-slate-50'
               }`}
             >
-              Global Query<br/><span className="text-xs opacity-80">"Summarize the events."</span>
+              <Activity className="w-4 h-4" />
+              Global Query
+              <span className="hidden sm:inline text-xs opacity-60 ml-1">(e.g. "Summarize video")</span>
             </button>
           </div>
         </div>
 
-        {/* Pipeline Visualization */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative">
+        {/* Main Visualization Stage */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Step 1: Video Input */}
-          <div className="lg:col-span-3 bg-white p-6 rounded-2xl shadow-lg border border-slate-100 h-64 flex flex-col items-center justify-center relative z-10">
-            <div className="absolute top-4 left-4 font-mono text-xs text-slate-400">01 INPUT</div>
-            <div className="flex flex-wrap gap-1 justify-center w-full">
-              {tokens.map((t) => (
-                <motion.div
-                  key={t.id}
-                  className="w-3 h-3 rounded-sm"
-                  style={{ 
-                    backgroundColor: `rgb(${100 + t.id * 5}, ${116}, ${139})`,
-                    opacity: 0.6
-                  }}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: t.id * 0.02 }}
-                />
-              ))}
-            </div>
-            <p className="mt-4 text-sm font-medium text-slate-700">Raw Vision Tokens</p>
-            <p className="text-xs text-slate-500">{TOTAL_TOKENS} tokens</p>
+          {/* Sidebar: Steps Navigation */}
+          <div className="lg:col-span-3 space-y-2">
+            {steps.map((s, idx) => (
+              <button
+                key={idx}
+                onClick={() => setStep(idx)}
+                className={`w-full text-left p-4 rounded-xl transition-all border ${
+                  step === idx 
+                    ? 'bg-white border-primary-500 shadow-md ring-1 ring-primary-100' 
+                    : 'bg-slate-50 border-transparent hover:bg-white hover:border-slate-200'
+                }`}
+              >
+                <div className={`text-xs font-bold uppercase mb-1 ${step === idx ? 'text-primary-600' : 'text-slate-400'}`}>
+                  Stage 0{idx + 1}
+                </div>
+                <div className={`font-semibold ${step === idx ? 'text-slate-900' : 'text-slate-500'}`}>
+                  {s.title.split('. ')[1]}
+                </div>
+              </button>
+            ))}
           </div>
 
-          {/* Arrow */}
-          <div className="hidden lg:flex lg:col-span-1 justify-center">
-             <motion.div animate={{ x: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-                <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-             </motion.div>
-          </div>
+          {/* Center: Interactive Canvas */}
+          <div className="lg:col-span-9">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden relative min-h-[500px] flex flex-col">
+              
+              {/* Header / Math Context */}
+              <div className="bg-slate-900 text-white px-8 py-4 flex justify-between items-center border-b border-slate-800">
+                 <div>
+                   <h3 className="font-bold text-lg">{steps[step].title}</h3>
+                   <p className="text-slate-400 text-sm mt-1">{steps[step].desc}</p>
+                 </div>
+                 <div className="hidden md:block font-mono text-primary-400 text-sm bg-slate-800 px-3 py-1.5 rounded border border-slate-700">
+                   {steps[step].math}
+                 </div>
+              </div>
 
-          {/* Step 2: QTSplus Logic (The Core) */}
-          <div className="lg:col-span-4 bg-slate-900 p-6 rounded-2xl shadow-xl border border-slate-800 h-80 flex flex-col relative z-10 overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
-            <div className="absolute top-4 left-4 font-mono text-xs text-slate-400">02 QTS+ PROCESSING</div>
-            
-            {/* Query Representation */}
-            <div className="mb-6 flex items-center gap-3 border-b border-slate-700 pb-4">
-               <MessageSquare className="w-5 h-5 text-accent-500" />
-               <div className="text-sm text-white">
-                 Query: <span className="text-accent-500 font-mono">{queryType === 'specific' ? 'Localized' : 'Global'}</span>
-               </div>
-            </div>
-
-            {/* Scoring Visualization */}
-            <div className="flex-1 flex flex-col justify-center">
-               <div className="flex items-end gap-[2px] h-32 mb-2">
-                  {tokens.map((t) => (
+              {/* Visualization Area */}
+              <div className="flex-1 p-8 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-slate-50/50">
+                
+                {/* VISUALIZATION LOGIC BASED ON STEP */}
+                <AnimatePresence mode="wait">
+                  
+                  {step === 0 && (
                     <motion.div 
-                      key={t.id}
-                      className={`w-full rounded-t-sm transition-colors duration-500 ${t.relevance > 0.5 ? 'bg-green-500' : 'bg-slate-700'}`}
-                      initial={{ height: '5%' }}
-                      animate={{ height: `${t.relevance * 100}%` }}
-                    />
-                  ))}
-               </div>
-               <div className="flex justify-between text-xs text-slate-400 font-mono">
-                 <span>Budget: {budget}</span>
-                 <span>Tokens: {TOTAL_TOKENS}</span>
-               </div>
-            </div>
-            
-            {/* Floating Badge */}
-            <motion.div 
-              className="absolute top-4 right-4 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs text-white border border-white/20"
-              animate={{ 
-                 scale: [1, 1.05, 1],
-                 boxShadow: ["0 0 0px rgba(255,255,255,0)", "0 0 15px rgba(255,255,255,0.2)", "0 0 0px rgba(255,255,255,0)"]
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-               Adaptive Budget
-            </motion.div>
-          </div>
+                      key="step0"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="flex flex-col items-center justify-center h-full"
+                    >
+                      <div className="grid grid-cols-8 gap-2 mb-6">
+                         {tokens.map((t) => (
+                           <motion.div 
+                             key={t.id}
+                             initial={{ scale: 0 }}
+                             animate={{ scale: 1 }}
+                             transition={{ delay: t.id * 0.005 }}
+                             className="w-8 h-8 bg-slate-300 rounded-md border border-slate-400/30"
+                           />
+                         ))}
+                      </div>
+                      <div className="flex items-center gap-4 text-slate-500 mt-4 font-mono text-sm">
+                        <Layers className="w-5 h-5" />
+                        <span>M = {TOTAL_TOKENS} dense visual tokens</span>
+                      </div>
+                    </motion.div>
+                  )}
 
-          {/* Arrow */}
-          <div className="hidden lg:flex lg:col-span-1 justify-center">
-             <motion.div animate={{ x: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }}>
-                <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-             </motion.div>
-          </div>
+                  {step === 1 && (
+                    <motion.div 
+                      key="step1"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="flex flex-col items-center justify-center h-full"
+                    >
+                      <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white px-6 py-3 rounded-full shadow-lg border border-primary-100 flex items-center gap-3 z-20">
+                        <div className="w-3 h-3 rounded-full bg-primary-500 animate-pulse" />
+                        <span className="text-sm font-medium text-slate-800">
+                          Query: <span className="font-mono text-primary-600">{queryMode === 'local' ? '"Find the red car"' : '"Summarize"'}</span>
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-8 gap-2 mt-12">
+                         {tokens.map((t) => (
+                           <motion.div 
+                             key={t.id}
+                             className="w-8 h-8 rounded-md border border-slate-400/30 relative overflow-hidden transition-colors duration-500"
+                             animate={{ 
+                               backgroundColor: `rgba(34, 197, 94, ${t.relevance})`, // Green opacity based on relevance
+                               scale: t.relevance > 0.6 ? 1.1 : 1
+                             }}
+                           >
+                             <div className="absolute inset-0 flex items-center justify-center text-[8px] font-mono opacity-50">
+                               {t.relevance.toFixed(1)}
+                             </div>
+                           </motion.div>
+                         ))}
+                      </div>
+                      <p className="text-sm text-slate-500 mt-6 bg-white/80 px-4 py-2 rounded-lg border border-slate-200">
+                        Heatmap: <span className="text-green-600 font-bold">Green</span> indicates high cross-attention score ($r_i$)
+                      </p>
+                    </motion.div>
+                  )}
 
-          {/* Step 3: Output to LLM */}
-          <div className="lg:col-span-3 bg-gradient-to-br from-primary-50 to-white p-6 rounded-2xl shadow-lg border border-primary-100 h-64 flex flex-col items-center justify-center relative z-10">
-            <div className="absolute top-4 left-4 font-mono text-xs text-primary-400">03 LLM INPUT</div>
-            
-            <div className="flex flex-wrap gap-1 justify-center w-full max-w-[80%]">
-              <AnimatePresence>
-                {tokens
-                  .filter((_, idx) => {
-                    // Naive top-k logic for visual demo
-                     const sortedIndices = tokens.map((t, i) => ({i, r: t.relevance})).sort((a,b) => b.r - a.r).slice(0, budget).map(o => o.i);
-                     return sortedIndices.includes(idx);
-                  })
-                  .map((t) => (
-                  <motion.div
-                    key={`out-${t.id}`}
-                    layoutId={`token-${t.id}`}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1.2 }}
-                    exit={{ opacity: 0, scale: 0 }}
-                    className="w-4 h-4 rounded bg-green-500"
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-            
-            <p className="mt-6 text-sm font-bold text-primary-800">Selected Evidence</p>
-            <p className="text-xs text-primary-600 mt-1">
-              <span className="font-bold">{Math.round((1 - budget/TOTAL_TOKENS)*100)}%</span> Compression
-            </p>
-            <div className="mt-2 flex items-center text-xs text-slate-500">
-              <Clock className="w-3 h-3 mr-1" /> Order Preserved
-            </div>
-          </div>
+                  {step === 2 && (
+                    <motion.div 
+                      key="step2"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="flex flex-col items-center justify-center h-full gap-8"
+                    >
+                       <div className="flex flex-wrap justify-center gap-4">
+                          {/* Inputs to Budget Head */}
+                          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm w-40">
+                            <div className="text-xs text-slate-500 uppercase font-bold mb-2">Entropy H(p)</div>
+                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <motion.div 
+                                className="h-full bg-blue-500" 
+                                animate={{ width: queryMode === 'global' ? '80%' : '20%' }} 
+                              />
+                            </div>
+                            <div className="text-right text-xs font-mono mt-1 text-blue-600">
+                              {queryMode === 'global' ? 'High' : 'Low'}
+                            </div>
+                          </div>
+                          
+                          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm w-40">
+                             <div className="text-xs text-slate-500 uppercase font-bold mb-2">{"Peak Rel ($r_{max}$)"}</div>
+                             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <motion.div 
+                                className="h-full bg-purple-500" 
+                                animate={{ width: queryMode === 'local' ? '90%' : '40%' }} 
+                              />
+                            </div>
+                             <div className="text-right text-xs font-mono mt-1 text-purple-600">
+                               {queryMode === 'local' ? 'Sharp' : 'Diffuse'}
+                             </div>
+                          </div>
+                       </div>
 
-        </div>
-        
-        {/* Feature Grid */}
-        <div className="grid md:grid-cols-3 gap-8 mt-16">
-          <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-             <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
-               <Filter className="text-blue-600 w-5 h-5" />
-             </div>
-             <h4 className="font-bold text-slate-900 mb-2">Cross-Attention Scoring</h4>
-             <p className="text-sm text-slate-600">Scores visual tokens based on their semantic relevance to the text query using Qwen2.5-style attention.</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-             <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center mb-4">
-               <Brain className="text-purple-600 w-5 h-5" />
-             </div>
-             <h4 className="font-bold text-slate-900 mb-2">Adaptive Budget</h4>
-             <p className="text-sm text-slate-600">Dynamically predicts retention fraction ($\rho$) based on query complexity and visual relevance entropy.</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-             <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center mb-4">
-               <Clock className="text-green-600 w-5 h-5" />
-             </div>
-             <h4 className="font-bold text-slate-900 mb-2">Temporal Re-encoding</h4>
-             <p className="text-sm text-slate-600">A lightweight re-encoder preserves temporal order using absolute time info, ensuring global coverage.</p>
+                       <ArrowRight className="rotate-90 md:rotate-0 text-slate-300 w-8 h-8" />
+
+                       <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl w-full max-w-md relative overflow-hidden">
+                          <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Brain size={100} />
+                          </div>
+                          <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
+                            <Cpu className="w-5 h-5" /> Budget Head Output
+                          </h4>
+                          <div className="flex items-end justify-between mb-2">
+                            <span className="text-slate-300 text-sm">Retention Ratio ($\rho$)</span>
+                            <span className="text-2xl font-mono font-bold text-primary-400">{budgetRho.toFixed(2)}</span>
+                          </div>
+                          <div className="w-full bg-slate-700 h-3 rounded-full overflow-hidden">
+                             <motion.div 
+                               className="h-full bg-gradient-to-r from-primary-600 to-primary-400"
+                               animate={{ width: `${budgetRho * 100}%` }}
+                             />
+                          </div>
+                          <p className="text-xs text-slate-400 mt-4">
+                            Predicted tokens to keep: <span className="text-white font-bold">{keptCount}</span> / {TOTAL_TOKENS}
+                          </p>
+                       </div>
+                    </motion.div>
+                  )}
+
+                  {step === 3 && (
+                    <motion.div 
+                      key="step3"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="flex flex-col items-center justify-center h-full"
+                    >
+                       <div className="grid grid-cols-8 gap-2">
+                         {tokens.map((t) => (
+                           <motion.div 
+                             key={t.id}
+                             animate={{ 
+                               opacity: t.kept ? 1 : 0.2,
+                               scale: t.kept ? 1 : 0.8,
+                               backgroundColor: t.kept ? '#22c55e' : '#94a3b8'
+                             }}
+                             className="w-8 h-8 rounded-md border border-slate-400/30 flex items-center justify-center"
+                           >
+                             {t.kept && <div className="w-2 h-2 bg-white rounded-full" />}
+                           </motion.div>
+                         ))}
+                      </div>
+                      <div className="mt-8 flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                          <div className="w-4 h-4 bg-slate-300 rounded opacity-20"></div>
+                          Pruned
+                        </div>
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                          <div className="w-4 h-4 bg-green-500 rounded"></div>
+                          Retained ({Math.round((keptCount/TOTAL_TOKENS)*100)}%)
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {step === 4 && (
+                    <motion.div 
+                      key="step4"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="flex flex-col items-center justify-center h-full"
+                    >
+                      <div className="flex flex-wrap gap-1 justify-center max-w-2xl">
+                         <AnimatePresence>
+                           {tokens.filter(t => t.kept).map((t) => (
+                             <motion.div 
+                               key={`reenc-${t.id}`}
+                               layoutId={`token-${t.id}`}
+                               initial={{ scale: 0 }}
+                               animate={{ scale: 1 }}
+                               className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-700 rounded-lg shadow-lg flex items-center justify-center text-white/90 font-mono text-xs border border-white/20"
+                             >
+                               <Clock className="w-3 h-3" />
+                             </motion.div>
+                           ))}
+                         </AnimatePresence>
+                      </div>
+                      
+                      <div className="mt-8 bg-white p-4 rounded-xl border border-slate-200 shadow-sm max-w-md text-center">
+                         <h4 className="font-bold text-slate-900 flex items-center justify-center gap-2">
+                           <Minimize2 className="w-4 h-4 text-primary-600" />
+                           Compressed Stream ($X'$)
+                         </h4>
+                         <p className="text-sm text-slate-600 mt-2">
+                           The retained tokens are re-encoded with absolute time information, preserving order for temporal reasoning while reducing memory by 
+                           <span className="font-bold text-slate-900"> ~{Math.round((1 - keptCount/TOTAL_TOKENS)*100)}%</span>.
+                         </p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                </AnimatePresence>
+              </div>
+
+              {/* Step Indicator */}
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-100">
+                <motion.div 
+                  className="h-full bg-primary-500"
+                  animate={{ width: `${((step + 1) / steps.length) * 100}%` }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
