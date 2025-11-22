@@ -94,7 +94,7 @@ const InteractivePipeline: React.FC = () => {
               }`}
             >
               <Cpu className="w-4 h-4" />
-              Figure 1: Architecture (Inference)
+              Architecture (Inference)
             </button>
             <button
               onClick={() => setView('data')}
@@ -105,7 +105,7 @@ const InteractivePipeline: React.FC = () => {
               }`}
             >
               <Database className="w-4 h-4" />
-              Figure 3: Data Pipeline
+              Data Pipeline
             </button>
           </div>
         </div>
