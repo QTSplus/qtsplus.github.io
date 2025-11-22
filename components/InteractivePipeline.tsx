@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Brain, 
-  Target, 
-  Cpu, 
+import {
+  Brain,
+  Target,
+  Cpu,
   Database,
   Filter,
   PlayCircle,
@@ -15,6 +15,7 @@ import {
   XCircle,
   Sigma
 } from 'lucide-react';
+import MathJax from './MathJax';
 
 // --- Types & Constants ---
 
@@ -161,7 +162,7 @@ const InteractivePipeline: React.FC = () => {
                 {/* 1. INPUTS */}
                 <div className="flex flex-col gap-12 w-48 shrink-0 z-10">
                   <div className="relative bg-slate-100 rounded-2xl p-4 border border-slate-200 shadow-sm group">
-                     <div className="absolute -right-3 top-1/2 -translate-y-1/2">
+                     <div className="absolute -right-8 top-1/2 -translate-y-1/2">
                        <ArrowRight className="text-slate-300" />
                      </div>
                      <div className="flex items-center gap-3 mb-2">
@@ -174,7 +175,7 @@ const InteractivePipeline: React.FC = () => {
                   </div>
 
                   <div className="relative bg-slate-100 rounded-2xl p-4 border border-slate-200 shadow-sm group">
-                     <div className="absolute -right-3 top-1/2 -translate-y-1/2">
+                     <div className="absolute -right-8 top-1/2 -translate-y-1/2">
                        <ArrowRight className="text-slate-300" />
                      </div>
                      <div className="flex items-center gap-3 mb-2">
@@ -216,7 +217,9 @@ const InteractivePipeline: React.FC = () => {
                        <div className="flex justify-between items-center mb-2">
                          <h5 className="font-bold text-green-900 text-sm">Cross-Attention Scoring</h5>
                          <span className="font-mono text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                           {'r = \\max_{h,L} \\alpha'}
+                           <MathJax inline className="inline-block">
+                             {String.raw`$r = \max_{h,L} \alpha$`}
+                           </MathJax>
                          </span>
                        </div>
                        {/* Heatmap visualization */}
@@ -243,24 +246,24 @@ const InteractivePipeline: React.FC = () => {
                          
                          {/* Inputs Visualization */}
                          <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-500 mb-3">
-                           <div className="bg-slate-50 p-1 rounded border flex justify-between">
-                             <span>s_q</span>
+                           <div className="bg-slate-50 p-2.5 rounded border flex justify-between items-center">
+                             <MathJax inline>{String.raw`$s_q$`}</MathJax>
                              <span className={queryType === 'local' ? 'text-green-600 font-bold' : 'text-blue-600 font-bold'}>
                                {queryType === 'local' ? 'Specific' : 'General'}
                              </span>
                            </div>
-                           <div className="bg-slate-50 p-1 rounded border flex justify-between">
-                             <span>log M</span>
+                           <div className="bg-slate-50 p-2.5 rounded border flex justify-between items-center">
+                             <MathJax inline>{String.raw`$\log M$`}</MathJax>
                              <span>3.68</span>
                            </div>
-                           <div className="bg-slate-50 p-1 rounded border flex justify-between">
-                             <span>r_max</span>
+                           <div className="bg-slate-50 p-2.5 rounded border flex justify-between items-center">
+                             <MathJax inline>{String.raw`$r_{\text{max}}$`}</MathJax>
                              <span className={queryType === 'local' ? 'text-green-600 font-bold' : 'text-red-400'}>
                                {queryType === 'local' ? '0.98' : '0.45'}
                              </span>
                            </div>
-                           <div className="bg-slate-50 p-1 rounded border flex justify-between">
-                             <span>H(p)</span>
+                           <div className="bg-slate-50 p-2.5 rounded border flex justify-between items-center">
+                             <MathJax inline>{String.raw`$H(p)$`}</MathJax>
                              <span className={queryType === 'global' ? 'text-blue-600 font-bold' : 'text-slate-600'}>
                                {queryType === 'global' ? 'High' : 'Low'}
                              </span>
@@ -269,7 +272,9 @@ const InteractivePipeline: React.FC = () => {
                        </div>
 
                        <div className="bg-slate-900 text-white p-2 rounded-lg text-center">
-                         <div className="text-[10px] uppercase tracking-widest text-slate-400">Predicted Rho</div>
+                         <div className="text-[10px] uppercase tracking-widest text-slate-400">
+                           Predicted <MathJax inline className="inline">{String.raw`$\rho$`}</MathJax>
+                         </div>
                          <div className="text-xl font-mono font-bold text-yellow-400">
                            {rho.toFixed(2)}
                          </div>
@@ -280,7 +285,7 @@ const InteractivePipeline: React.FC = () => {
                     <div className="bg-white rounded-xl border border-green-200 p-4 shadow-sm flex flex-col justify-between">
                        <h5 className="font-bold text-green-900 text-sm">Top-n Gate</h5>
                        <div className="text-xs text-slate-600 mb-2">
-                         Target <span className="font-mono">n = {Math.ceil(40 * rho)}</span>
+                         Target <MathJax inline key={rho}>{`$n = ${Math.ceil(40 * rho)}$`}</MathJax>
                        </div>
                        <div className="flex flex-wrap gap-1 content-start h-24 overflow-y-auto p-1 bg-slate-50 rounded border border-slate-100">
                           {tokens.map((t) => (
@@ -309,7 +314,9 @@ const InteractivePipeline: React.FC = () => {
                              </p>
                           </div>
                           <div className="bg-white/20 p-2 rounded-lg font-mono text-xs">
-                            X' &#8592; Z + Pos
+                            <MathJax inline>
+                              {String.raw`$X' \leftarrow Z + \text{Pos}$`}
+                            </MathJax>
                           </div>
                        </div>
                        {/* Decorative background lines */}
