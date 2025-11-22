@@ -94,7 +94,7 @@ const InteractivePipeline: React.FC = () => {
               }`}
             >
               <Cpu className="w-4 h-4" />
-              Figure 1: Architecture (Inference)
+              Architecture (Inference)
             </button>
             <button
               onClick={() => setView('data')}
@@ -105,7 +105,7 @@ const InteractivePipeline: React.FC = () => {
               }`}
             >
               <Database className="w-4 h-4" />
-              Figure 3: Data Pipeline
+              Data Pipeline
             </button>
           </div>
         </div>
@@ -218,7 +218,7 @@ const InteractivePipeline: React.FC = () => {
                          <h5 className="font-bold text-green-900 text-sm">Cross-Attention Scoring</h5>
                          <span className="font-mono text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded">
                            <MathJax inline className="inline-block">
-                             {String.raw`$r = \max_{h,L} \alpha$`}
+                             {String.raw`$r_i \;=\; \max_{h,\;\ell} \; \alpha_{h,\ell,i} \;\in [0,1]$`}
                            </MathJax>
                          </span>
                        </div>
@@ -245,7 +245,7 @@ const InteractivePipeline: React.FC = () => {
                          <h5 className="font-bold text-green-900 text-sm mb-3">Adaptive Budget Head</h5>
                          
                          {/* Inputs Visualization */}
-                         <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-500 mb-3">
+                         <div className="grid grid-cols-1 min-[1366px]:grid-cols-2 gap-2 text-[10px] font-mono text-slate-500 mb-3">
                            <div className="bg-slate-50 p-2.5 rounded border flex justify-between items-center">
                              <MathJax inline>{String.raw`$s_q$`}</MathJax>
                              <span className={queryType === 'local' ? 'text-green-600 font-bold' : 'text-blue-600 font-bold'}>
@@ -272,7 +272,7 @@ const InteractivePipeline: React.FC = () => {
                        </div>
 
                        <div className="bg-slate-900 text-white p-2 rounded-lg text-center">
-                         <div className="text-[10px] uppercase tracking-widest text-slate-400">
+                         <div className="text-[10px] tracking-widest text-slate-400">
                            Predicted <MathJax inline className="inline">{String.raw`$\rho$`}</MathJax>
                          </div>
                          <div className="text-xl font-mono font-bold text-yellow-400">
@@ -315,7 +315,7 @@ const InteractivePipeline: React.FC = () => {
                           </div>
                           <div className="bg-white/20 p-2 rounded-lg font-mono text-xs">
                             <MathJax inline>
-                              {String.raw`$X' \leftarrow Z + \text{Pos}$`}
+                              {String.raw`$\mathcal{X}' \leftarrow Z + \text{Pos}$`}
                             </MathJax>
                           </div>
                        </div>
