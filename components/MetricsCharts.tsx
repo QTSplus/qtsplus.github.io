@@ -1,10 +1,12 @@
 
 import React, { useState } from 'react';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-  BarChart, Bar, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis 
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  BarChart, Bar, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../locales/translations';
 
 // --- DATA ---
 
@@ -54,32 +56,35 @@ const mvBenchData = [
 ];
 
 const MetricsCharts: React.FC = () => {
+  const { language } = useLanguage();
+  const t = translations[language].metrics;
+
   const [activeTab, setActiveTab] = useState<'efficiency' | 'accuracy' | 'ablation'>('accuracy');
 
   return (
     <section className="py-20 bg-white" id="results">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">Experimental Results</h2>
+          <h2 className="text-3xl font-bold text-slate-900 mb-4">{t.sectionTitle}</h2>
           <p className="text-lg text-slate-600 max-w-3xl mx-auto">
-            Evaluation on eight long-video understanding benchmarks demonstrates that QTSplus achieves massive compression with near-parity or improved accuracy, especially on temporal tasks.
+            {t.sectionDescription}
           </p>
         </div>
 
         {/* Tabs */}
         <div className="flex justify-center mb-10">
           <div className="bg-slate-100 p-1 rounded-lg inline-flex">
-             {['efficiency', 'accuracy', 'ablation'].map((tab) => (
+             {(['efficiency', 'accuracy', 'ablation'] as const).map((tab) => (
                <button
                  key={tab}
-                 onClick={() => setActiveTab(tab as any)}
-                 className={`px-6 py-2 rounded-md text-sm font-medium capitalize transition-all ${
-                   activeTab === tab 
-                     ? 'bg-white text-slate-900 shadow-sm' 
+                 onClick={() => setActiveTab(tab)}
+                 className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                   activeTab === tab
+                     ? 'bg-white text-slate-900 shadow-sm'
                      : 'text-slate-500 hover:text-slate-700'
                  }`}
                >
-                 {tab}
+                 {t[tab]}
                </button>
              ))}
           </div>
@@ -93,34 +98,34 @@ const MetricsCharts: React.FC = () => {
               className="grid md:grid-cols-2 gap-12"
             >
                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <h4 className="text-lg font-bold text-slate-900 mb-2 text-center">Visual Token Scaling</h4>
-                <p className="text-sm text-slate-500 text-center mb-6">Number of visual embeddings vs Input Video Frames</p>
+                <h4 className="text-lg font-bold text-slate-900 mb-2 text-center">{t.tokenScalingTitle}</h4>
+                <p className="text-sm text-slate-500 text-center mb-6">{t.tokenScalingDescription}</p>
                 <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={scalingData} margin={{top: 20, right: 30, left: 0, bottom: 0}}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="frames" label={{ value: 'Frames', position: 'insideBottom', offset: -5, style: {fill: '#64748b'} }} />
+                      <XAxis dataKey="frames" label={{ value: t.frames, position: 'insideBottom', offset: -5, style: {fill: '#64748b'} }} />
                       <YAxis tickFormatter={(val) => `${val/1000}k`} tick={{fill: '#64748b'}} />
                       <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(val: number) => val.toLocaleString()} />
                       <Legend verticalAlign="top" />
-                      <Line type="monotone" dataKey="baseline" name="Baseline Qwen2.5-VL" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" />
-                      <Line type="monotone" dataKey="ours" name="QTSplus (Ours)" stroke="#22c55e" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
+                      <Line type="monotone" dataKey="baseline" name={t.baselineLabel} stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" />
+                      <Line type="monotone" dataKey="ours" name={t.qtsLabel} stroke="#22c55e" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
                </div>
-               
+
                <div className="flex flex-col justify-center space-y-6">
                   <div className="bg-blue-50 p-8 rounded-2xl border border-blue-100">
-                    <h4 className="text-2xl font-bold text-blue-900 mb-2">-89% Token Reduction</h4>
+                    <h4 className="text-2xl font-bold text-blue-900 mb-2">{t.tokenReduction}</h4>
                     <p className="text-blue-800 text-base leading-relaxed">
-                      The number of visual embeddings drops from ~180k to ~20k at 600 frames. The slope of growth is drastically reduced, enabling processing of hour-long videos on commodity GPUs.
+                      {t.tokenReductionDescription}
                     </p>
                   </div>
                   <div className="bg-orange-50 p-8 rounded-2xl border border-orange-100">
-                    <h4 className="text-2xl font-bold text-orange-900 mb-2">28% Latency Reduction</h4>
+                    <h4 className="text-2xl font-bold text-orange-900 mb-2">{t.latencyReduction}</h4>
                     <p className="text-orange-800 text-base leading-relaxed">
-                      Wall-clock inference time on a single A100 GPU drops from ~83s to ~60s for long inputs. The adaptive budget ($\rho$) ensures tokens are only spent when necessary.
+                      {t.latencyReductionDescription}
                     </p>
                   </div>
                </div>
@@ -135,7 +140,7 @@ const MetricsCharts: React.FC = () => {
             >
               {/* Main Benchmarks */}
               <div className="lg:col-span-5 bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-sm">
-                 <h4 className="text-lg font-bold text-slate-900 mb-6 text-center">General Long-Video Benchmarks</h4>
+                 <h4 className="text-lg font-bold text-slate-900 mb-6 text-center">{t.generalBenchmarks}</h4>
                  <div className="h-80">
                    <ResponsiveContainer width="100%" height="100%">
                      <BarChart data={generalBenchmarks} barSize={40} margin={{top: 10, right: 10, left: -20, bottom: 0}}>
@@ -150,7 +155,7 @@ const MetricsCharts: React.FC = () => {
                    </ResponsiveContainer>
                  </div>
                  <p className="text-xs text-center text-slate-500 mt-4">
-                    Near-parity performance despite 89% compression.
+                    {t.nearParity}
                  </p>
               </div>
 
@@ -159,7 +164,7 @@ const MetricsCharts: React.FC = () => {
                  {/* TempCompass */}
                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
                    <div className="flex justify-between items-center px-4 mb-2">
-                      <h4 className="text-sm font-bold text-slate-900">TempCompass (Temporal Logic)</h4>
+                      <h4 className="text-sm font-bold text-slate-900">{t.tempCompassTitle}</h4>
                       <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">+20.5 Direction / +5.6 Order</span>
                    </div>
                    <div className="h-40">
@@ -180,8 +185,8 @@ const MetricsCharts: React.FC = () => {
                  {/* MVBench Subset */}
                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
                    <div className="flex justify-between items-center px-4 mb-2">
-                      <h4 className="text-sm font-bold text-slate-900">MVBench (Fine-Grained)</h4>
-                      <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">Better Unexpected Action Detection</span>
+                      <h4 className="text-sm font-bold text-slate-900">{t.mvBenchTitle}</h4>
+                      <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">{t.mvBenchHighlight}</span>
                    </div>
                    <div className="h-40">
                      <ResponsiveContainer width="100%" height="100%">
@@ -202,14 +207,13 @@ const MetricsCharts: React.FC = () => {
 
           {/* ABLATION */}
           {activeTab === 'ablation' && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               className="space-y-8"
             >
               <div className="text-center max-w-3xl mx-auto mb-4">
                 <p className="text-slate-600 leading-relaxed">
-                  We compare the full <strong>QTSplus</strong> (Query-Aware + Re-encode) against <strong>UNIF</strong> (Uniform Sampling) and <strong>nREENC</strong> (QTSplus without Re-encoding).
-                  <br/>The data confirms that temporal re-encoding is vital for tasks involving order and fine-grained action.
+                  {t.ablationDescription}
                 </p>
               </div>
 
@@ -219,30 +223,30 @@ const MetricsCharts: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <XAxis dataKey="task" tick={{fontSize: 12, fontWeight: 600, fill: '#475569'}} />
                     <YAxis domain={[40, 80]} tick={{fill: '#64748b'}} />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                      cursor={{fill: 'rgba(0,0,0,0.03)'}} 
+                      cursor={{fill: 'rgba(0,0,0,0.03)'}}
                     />
                     <Legend verticalAlign="top" wrapperStyle={{paddingBottom: '20px'}} />
-                    <Bar dataKey="UNIF" name="Uniform Sampling" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="nREENC" name="No Re-encoder (Token Select Only)" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="QTS3B" name="Full QTSplus" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="UNIF" name={t.uniformSamplingName} fill="#cbd5e1" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="nREENC" name={t.noReencoderName} fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="QTS3B" name={t.fullQtsName} fill="#16a34a" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              
+
               <div className="grid md:grid-cols-3 gap-6 text-center text-sm">
                 <div className="p-5 bg-slate-50 rounded-xl border border-slate-200">
-                   <span className="font-bold block text-slate-900 text-lg mb-2">Uniform Sampling (UNIF)</span>
-                   <p className="text-slate-500">Static compression wastes budget on irrelevant frames. Performs consistently worst across all metrics.</p>
+                   <span className="font-bold block text-slate-900 text-lg mb-2">{t.uniformSamplingTitle}</span>
+                   <p className="text-slate-500">{t.uniformSamplingDescription}</p>
                 </div>
                 <div className="p-5 bg-orange-50/50 rounded-xl border border-orange-200">
-                   <span className="font-bold block text-orange-900 text-lg mb-2">No Re-encoder (nREENC)</span>
-                   <p className="text-orange-800/80">Selects good tokens but loses temporal order information. Struggles with "Order", "Action", and "Counterfactual" tasks.</p>
+                   <span className="font-bold block text-orange-900 text-lg mb-2">{t.noReencoderTitle}</span>
+                   <p className="text-orange-800/80">{t.noReencoderDescription}</p>
                 </div>
                 <div className="p-5 bg-green-50/50 rounded-xl border border-green-200">
-                   <span className="font-bold block text-green-900 text-lg mb-2">Full QTSplus</span>
-                   <p className="text-green-800/80">Restores temporal coherence via absolute time re-encoding. Achieves state-of-the-art efficiency/accuracy trade-off.</p>
+                   <span className="font-bold block text-green-900 text-lg mb-2">{t.fullQtsTitle}</span>
+                   <p className="text-green-800/80">{t.fullQtsDescription}</p>
                 </div>
               </div>
             </motion.div>

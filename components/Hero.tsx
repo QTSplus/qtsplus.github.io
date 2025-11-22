@@ -1,7 +1,9 @@
 import React from 'react';
 import { Author, Affiliation } from '../types';
-import { FileText, Github, Database, MonitorPlay } from 'lucide-react';
+import { FileText, Github, Database, MonitorPlay, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../locales/translations';
 
 const authors: Author[] = [
   { name: "Siyou Li", affiliation: [1] },
@@ -32,9 +34,40 @@ const affiliations: Affiliation[] = [
 ];
 
 const Hero: React.FC = () => {
+  const { language, setLanguage } = useLanguage();
+  const t = translations[language].hero;
+
   return (
     <header className="relative pt-20 pb-12 px-4 sm:px-6 lg:px-8 bg-white overflow-hidden">
        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary-500 via-green-400 to-primary-600" />
+
+       {/* Language Toggle Button */}
+       <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
+         <div className="flex gap-2 bg-white rounded-full p-1 shadow-md border border-slate-200">
+           <button
+             onClick={() => setLanguage('en')}
+             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+               language === 'en'
+                 ? 'bg-primary-600 text-white shadow-sm'
+                 : 'text-slate-600 hover:bg-slate-50'
+             }`}
+           >
+             <Globe className="w-3 h-3" />
+             EN
+           </button>
+           <button
+             onClick={() => setLanguage('zh')}
+             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+               language === 'zh'
+                 ? 'bg-primary-600 text-white shadow-sm'
+                 : 'text-slate-600 hover:bg-slate-50'
+             }`}
+           >
+             <Globe className="w-3 h-3" />
+             中文
+           </button>
+         </div>
+       </div>
        
        <div className="max-w-5xl mx-auto text-center z-10 relative">
           <motion.div
@@ -77,7 +110,7 @@ const Hero: React.FC = () => {
              ))}
           </div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
@@ -85,19 +118,19 @@ const Hero: React.FC = () => {
           >
             <a href="#" className="inline-flex items-center px-5 py-2.5 rounded-full bg-slate-900 text-white font-medium hover:bg-slate-700 transition-colors">
               <FileText className="w-4 h-4 mr-2" />
-              Paper
+              {t.paper}
             </a>
             <a href="https://github.com/Siyou-Li/QTSplus" className="inline-flex items-center px-5 py-2.5 rounded-full bg-slate-100 text-slate-900 font-medium border border-slate-200 hover:bg-slate-200 transition-colors">
               <Github className="w-4 h-4 mr-2" />
-              Code
+              {t.code}
             </a>
             <a href="https://github.com/vincentha766/QTSplus-Dataset" className="inline-flex items-center px-5 py-2.5 rounded-full bg-slate-100 text-slate-900 font-medium border border-slate-200 hover:bg-slate-200 transition-colors">
               <Database className="w-4 h-4 mr-2" />
-              Dataset
+              {t.dataset}
             </a>
             <a href="https://huggingface.co/collections/AlpachinoNLP/qtsplus" className="inline-flex items-center px-5 py-2.5 rounded-full bg-yellow-50 text-yellow-700 font-medium border border-yellow-200 hover:bg-yellow-100 transition-colors">
               <span className="mr-2">🤗</span>
-              Hugging Face
+              {t.huggingFace}
             </a>
           </motion.div>
        </div>
