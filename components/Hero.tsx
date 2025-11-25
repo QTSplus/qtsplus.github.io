@@ -57,7 +57,7 @@ function TokenStream() {
       const y = (Math.random() - 0.5) * 10;
       const z = (Math.random() - 0.5) * 10 - 5; // Start further back
       const speed = Math.random() * 0.5 + 0.5;
-      const selected = Math.random() > 0.8; // 20% selected (QTSplus logic)
+      const selected = Math.random() > 0.6; // 40% selected (QTSplus logic)
       temp.push({ x, y, z, speed, selected, id: i });
     }
     return temp;
