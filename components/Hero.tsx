@@ -4,6 +4,9 @@ import { FileText, Github, Database, MonitorPlay, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../locales/translations';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Float, Environment, Box, Instances, Instance } from '@react-three/drei';
+import * as THREE from 'three';
 
 const authors: Author[] = [
   { name: "Siyou Li", affiliation: [1] },
@@ -32,6 +35,97 @@ const affiliations: Affiliation[] = [
   { id: 8, name: "University of Birmingham" },
   { id: 9, name: "Utrecht University" },
 ];
+
+// Fix for missing intrinsic types in the current environment
+const Group = 'group' as any;
+const MeshStandardMaterial = 'meshStandardMaterial' as any;
+const Color = 'color' as any;
+const AmbientLight = 'ambientLight' as any;
+const PointLight = 'pointLight' as any;
+const Fog = 'fog' as any;
+
+const NUM_INSTANCES = 150;
+
+function TokenStream() {
+  const ref = useRef<THREE.Group>(null);
+  
+  // Create random initial positions for tokens
+  const particles = useMemo(() => {
+    const temp = [];
+    for (let i = 0; i < NUM_INSTANCES; i++) {
+      const x = (Math.random() - 0.5) * 10;
+      const y = (Math.random() - 0.5) * 10;
+      const z = (Math.random() - 0.5) * 10 - 5; // Start further back
+      const speed = Math.random() * 0.5 + 0.5;
+      const selected = Math.random() > 0.8; // 20% selected (QTSplus logic)
+      temp.push({ x, y, z, speed, selected, id: i });
+    }
+    return temp;
+  }, []);
+
+  useFrame((state) => {
+    if (!ref.current) return;
+    const t = state.clock.getElapsedTime();
+    
+    ref.current.children.forEach((child, i) => {
+        const particle = particles[i];
+        
+        // Move particles forward (Z axis)
+        let newZ = particle.z + t * particle.speed;
+        
+        // Loop them back
+        if (newZ > 5) {
+            newZ = -10;
+            // Hacky reset without modifying state directly every frame
+             // Just purely visual looping based on modulo logic if we did it mathematically, 
+             // but here we just rely on the visual loop
+        }
+        
+        // Wobbly motion
+        child.position.z = (particle.z + t * particle.speed) % 15 - 10;
+        child.position.y = particle.y + Math.sin(t + particle.x) * 0.2;
+        child.rotation.x = t * 0.2 + particle.id;
+        child.rotation.y = t * 0.1 + particle.id;
+
+        // "Filtering" visual effect:
+        // As they get close to Z=2, non-selected ones fade/shrink
+        const zPos = child.position.z;
+        if (zPos > 0) {
+            if (particle.selected) {
+                 child.scale.setScalar(1.2);
+                 (child as any).material.color.setHex(0x10B981); // Emerald
+                 (child as any).material.emissive.setHex(0x10B981);
+            } else {
+                 const scale = Math.max(0, 1 - (zPos * 0.5));
+                 child.scale.setScalar(scale);
+                 (child as any).material.color.setHex(0x334155); // Slate
+                 (child as any).material.emissive.setHex(0x000000);
+            }
+        } else {
+             // Reset
+             child.scale.setScalar(1);
+             (child as any).material.color.setHex(0x94A3B8); // Light Slate
+             (child as any).material.emissive.setHex(0x000000);
+        }
+    });
+  });
+
+  return (
+    <Group ref={ref}>
+        {particles.map((p, i) => (
+            <Box key={i} args={[0.4, 0.3, 0.05]} position={[p.x, p.y, p.z]}>
+                <MeshStandardMaterial 
+                    color="#94A3B8" 
+                    roughness={0.2} 
+                    metalness={0.8}
+                    transparent
+                    opacity={0.8}
+                />
+            </Box>
+        ))}
+    </Group>
+  );
+}
 
 const Hero: React.FC = () => {
   const { language, setLanguage } = useLanguage();
@@ -69,6 +163,24 @@ const Hero: React.FC = () => {
          </div>
        </div>
        
+       <div className="absolute inset-0 z-0 opacity-100 pointer-events-none">
+        <Canvas camera={{ position: [0, 0, 8], fov: 40 }}>
+          <Color attach="background" args={['#F8FAFC']} />
+          <AmbientLight intensity={1} />
+          <PointLight position={[10, 10, 10]} intensity={1} color="#10B981" />
+          <PointLight position={[-10, -10, -10]} intensity={0.5} color="#3B82F6" />
+          
+          {/* Fog to hide the spawn point */}
+          <Fog attach="fog" args={['#F8FAFC', 5, 15]} />
+
+          <Float speed={1} rotationIntensity={0.2} floatIntensity={0.2}>
+            <TokenStream />
+          </Float>
+
+          <Environment preset="city" />
+        </Canvas>
+      </div>
+      
        <div className="max-w-5xl mx-auto text-center z-10 relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
