@@ -164,7 +164,7 @@ const Hero: React.FC = () => {
        </div>
        
        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-        <Canvas camera={{ position: [0, 0, 8], fov: 40 }}>
+        <Canvas camera={{ position: [0, 0, 8], fov: 10 }}>
 
           <Float speed={1} rotationIntensity={0.2} floatIntensity={0.2}>
             <TokenStream />
