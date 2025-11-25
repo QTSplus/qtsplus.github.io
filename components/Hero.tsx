@@ -1,40 +1,12 @@
 import React, { useRef, useMemo }  from 'react';
-import { Author, Affiliation } from '../types';
-import { FileText, Github, Database, MonitorPlay, Globe } from 'lucide-react';
+import { FileText, Github, Database, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../locales/translations';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { HuggingFace } from '@lobehub/icons';
 import { Float, Environment, Box, Instances, Instance } from '@react-three/drei';
 import * as THREE from 'three';
-
-const authors: Author[] = [
-  { name: "Siyou Li", affiliation: [1] },
-  { name: "Huanan Wu", affiliation: [2], isCorresponding: true, email: "hwu110@sheffield.ac.uk" },
-  { name: "Juexi Shao", affiliation: [1] },
-  { name: "Yinghao Ma", affiliation: [1] },
-  { name: "Yujian Gan", affiliation: [1] },
-  { name: "Yihao Luo", affiliation: [3] },
-  { name: "Yuwei Wang", affiliation: [4] },
-  { name: "Dong Nie", affiliation: [5] },
-  { name: "Lu Wang", affiliation: [6] },
-  { name: "Wengqing Wu", affiliation: [1, 7] },
-  { name: "Le Zhang", affiliation: [1, 8] },
-  { name: "Massimo Poesio", affiliation: [1, 9] },
-  { name: "Juntao Yu", affiliation: [1], email: "juntao.yu@qmul.ac.uk" },
-];
-
-const affiliations: Affiliation[] = [
-  { id: 1, name: "Queen Mary University of London" },
-  { id: 2, name: "University of Sheffield" },
-  { id: 3, name: "Imperial College London" },
-  { id: 4, name: "Pengcheng Laboratory" },
-  { id: 5, name: "Meta Inc" },
-  { id: 6, name: "Meituan Inc" },
-  { id: 7, name: "Nanjing University of Science" },
-  { id: 8, name: "University of Birmingham" },
-  { id: 9, name: "Utrecht University" },
-];
 
 // Fix for missing intrinsic types in the current environment
 const Group = 'group' as any;
@@ -57,7 +29,7 @@ function TokenStream() {
       const y = (Math.random() - 0.5) * 10;
       const z = (Math.random() - 0.5) * 10 - 5; // Start further back
       const speed = Math.random() * 0.5 + 0.5;
-      const selected = Math.random() > 0.6; // 40% selected (QTSplus logic)
+      const selected = Math.random() > 0.8; // 20% selected (QTSplus logic)
       temp.push({ x, y, z, speed, selected, id: i });
     }
     return temp;
@@ -163,9 +135,13 @@ const Hero: React.FC = () => {
          </div>
        </div>
        
-       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-        <Canvas camera={{ position: [0, 0, 8], fov: 10 }}>
-
+       <div className="absolute inset-0 z-0 opacity-100 pointer-events-none">
+        <Canvas camera={{ position: [0, 0, 8], fov: 30 }}>
+        <Color attach="background" args={['#F8FAFC']} />
+        <AmbientLight intensity={1} />
+        <PointLight position={[10, 10, 10]} intensity={1} color="#10B981" />
+        <PointLight position={[-10, -10, -10]} intensity={0.5} color="#3B82F6" />
+          <Fog attach="fog" args={['#F8FAFC', 5, 15]} />
           <Float speed={1} rotationIntensity={0.2} floatIntensity={0.2}>
             <TokenStream />
           </Float>
@@ -180,40 +156,13 @@ const Hero: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-slate-900 mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-slate-900 mb-10 drop-shadow-[0_12px_30px_rgba(16,185,129,0.2)]">
               Seeing the Forest <span className="text-primary-600">and</span> the Trees
             </h1>
-            <h2 className="text-xl sm:text-2xl text-slate-600 font-medium mb-8">
+            <h2 className="text-xl sm:text-3xl text-slate-800 font-medium mb-10 drop-shadow-[0_8px_20px_rgba(59,130,246,0.3)]">
               Query-Aware Tokenizer for Long-Video Multimodal Language Models
             </h2>
           </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-slate-700 mb-8 max-w-4xl mx-auto"
-          >
-            {authors.map((author, idx) => (
-              <span key={idx} className="inline-flex items-center">
-                <span className={author.isCorresponding ? "font-semibold text-primary-700" : ""}>
-                  {author.name}
-                  <sup className="ml-0.5 text-xs text-slate-500">
-                    {author.affiliation.join(',')}
-                  </sup>
-                </span>
-                {idx < authors.length - 1 && <span className="mx-2 text-slate-300">|</span>}
-              </span>
-            ))}
-          </motion.div>
-
-          <div className="hidden sm:flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs text-slate-500 mb-10 max-w-4xl mx-auto">
-             {affiliations.map((aff) => (
-                <span key={aff.id} className="whitespace-nowrap">
-                  <sup>{aff.id}</sup>{aff.name}
-                </span>
-             ))}
-          </div>
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -221,19 +170,19 @@ const Hero: React.FC = () => {
             transition={{ delay: 0.5 }}
             className="flex flex-wrap justify-center gap-4"
           >
-            <a href="#" className="inline-flex items-center px-5 py-2.5 rounded-full bg-slate-900 text-white font-medium hover:bg-slate-700 transition-colors">
+            <a href="#" className="inline-flex items-center px-5 py-2.5 border text-xs tracking-[0.15em] uppercase font-bold rounded-full backdrop-blur-sm">
               <FileText className="w-4 h-4 mr-2" />
               {t.paper}
             </a>
-            <a href="https://github.com/Siyou-Li/QTSplus" className="inline-flex items-center px-5 py-2.5 rounded-full bg-slate-100 text-slate-900 font-medium border border-slate-200 hover:bg-slate-200 transition-colors">
+            <a href="https://github.com/Siyou-Li/QTSplus" className="inline-flex items-center px-5 py-2.5 border text-xs tracking-[0.15em] uppercase font-bold rounded-full backdrop-blur-sm">
               <Github className="w-4 h-4 mr-2" />
               {t.code}
             </a>
-            <a href="https://github.com/vincentha766/QTSplus-Dataset" className="inline-flex items-center px-5 py-2.5 rounded-full bg-slate-100 text-slate-900 font-medium border border-slate-200 hover:bg-slate-200 transition-colors">
+            <a href="https://github.com/vincentha766/QTSplus-Dataset" className="inline-flex items-center px-5 py-2.5 border text-xs tracking-[0.15em] uppercase font-bold rounded-full backdrop-blur-sm">
               <Database className="w-4 h-4 mr-2" />
               {t.dataset}
             </a>
-            <a href="https://huggingface.co/collections/AlpachinoNLP/qtsplus" className="inline-flex items-center px-5 py-2.5 rounded-full bg-yellow-50 text-yellow-700 font-medium border border-yellow-200 hover:bg-yellow-100 transition-colors">
+            <a href="https://huggingface.co/collections/AlpachinoNLP/qtsplus" className="inline-flex items-center px-5 py-2.5 border text-xs tracking-[0.15em] uppercase font-bold rounded-full backdrop-blur-sm">
               <span className="mr-2">🤗</span>
               {t.huggingFace}
             </a>

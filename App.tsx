@@ -1,6 +1,7 @@
 import React from 'react';
 import Hero from './components/Hero';
 import Abstract from './components/Abstract';
+import AuthorsAffiliations from './components/AuthorsAffiliations';
 import InteractivePipeline from './components/InteractivePipeline';
 import MetricsCharts from './components/MetricsCharts';
 import { useLanguage } from './contexts/LanguageContext';
@@ -14,6 +15,7 @@ function App() {
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-primary-200 selection:text-primary-900">
       <Hero />
       <main>
+        <AuthorsAffiliations />
         <Abstract />
         <InteractivePipeline />
         <MetricsCharts />
