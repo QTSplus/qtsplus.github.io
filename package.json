@@ -13,7 +13,10 @@
     "react-dom": "^19.2.0",
     "lucide-react": "^0.554.0",
     "framer-motion": "^12.23.24",
-    "recharts": "^3.4.1"
+    "recharts": "^3.4.1",
+    "@react-three/fiber": "^9.4.0",
+    "@react-three/drei": "^10.7.7",
+    "three": "^0.181.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
